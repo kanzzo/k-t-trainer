@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K und T üben</title>
+<link rel="icon" type="image/svg+xml" href="data/favicon.svg">
+<style>
+/* ============================================================
+   K-und-T-Übung für Tobi. Design nach Vorlage (referenz_design.html).
+   Aufbau: 1 Schriften, 2 Farben, 3 Seite, 4 Fenster, 5 Buttons,
+           6 Übungsfläche (Play, Bilder, Lichter), 7 Begrüßung/Ende
+   ============================================================ */
+
+/* ---------- 1. SCHRIFTEN (lokal aus data/@fonts) ---------- */
+@font-face { font-family: 'Comic Relief'; font-weight: 400; font-display: swap;
+  src: url('data/@fonts/comic-relief/comic-relief-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Comic Relief'; font-weight: 700; font-display: swap;
+  src: url('data/@fonts/comic-relief/comic-relief-latin-700-normal.woff2') format('woff2'); }
+
+:root {
+  --font-comic: 'Comic Relief', 'Comic Sans MS', sans-serif;
+  --font-text: var(--font-comic);     /* ganzer Text in Comic (Tobi ist 4) */
+  --weight-text: 400;                 /* Comic hat nur 400/700 */
+
+  /* ---------- 2. FARBROLLEN (Light = Standardwerte) ---------- */
+  --card-bg: #FFF9E5;
+  --bg: var(--card-bg);
+  --window-shadow: 0 0 12px color-mix(in srgb, var(--card-bg), black 20%);
+  --text-primary: #0A0A0A;
+  --text-secondary: #73736D;
+  --text-emphasis: #0A0A0A;
+  --border: #E0E0E0;
+  --good: #3E9B52;                    /* Grün für "richtig" (Lichter, Rand) */
+  --mix-target: black;
+  --emph-amount: 5%;
+  --focus-amount: 20%;
+}
+:root[data-theme="dark"] {
+  --bg: #121212;
+  --card-bg: #1E1E1E;
+  --text-primary: #B5B5B5;
+  --text-secondary: #A0A0A0;
+  --text-emphasis: #CBCBCB;
+  --border: #454545;
+  --good: #5FB874;
+  --mix-target: white;
+  --window-shadow: none;
+}
+
+/* ---------- 3. SEITE ---------- */
+* { -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; padding: 16px 16px 24px; min-height: 100vh; box-sizing: border-box;
+  background: var(--bg); color: var(--text-primary);
+  font-family: var(--font-text); font-weight: var(--weight-text);
+  font-size: 18px; line-height: 1.5;
+}
+h1 { font-family: var(--font-comic); color: var(--text-emphasis); margin: 0 0 10px; font-size: 28px; text-align: center; }
+
+/* ---------- 4. FENSTER ---------- */
+.window {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; box-shadow: var(--window-shadow, none);
+}
+.stack { max-width: 900px; margin: 0 auto; }
+
+/* ---------- 5. BUTTONS ---------- */
+button.btn {
+  font: inherit; font-size: 20px; padding: 12px 32px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card-bg);
+  color: var(--text-secondary); cursor: pointer;
+}
+button.btn.btn-emphasized {
+  background: color-mix(in srgb, var(--card-bg), var(--mix-target) var(--emph-amount));
+  color: var(--text-emphasis);
+}
+button:disabled { pointer-events: none; }
+@media (hover: hover) {
+  button.btn:hover:not(:disabled) {
+    border-width: 2px; padding: 11px 31px;
+    border-color: color-mix(in srgb, var(--border), var(--mix-target) var(--focus-amount));
+  }
+}
+.theme-toggle {
+  position: fixed; top: 14px; right: 18px; z-index: 5;
+  width: 34px; height: 34px; padding: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card-bg); color: var(--text-primary);
+  border: 1px solid var(--border); font-size: 16px; cursor: pointer;
+}
+
+/* ---------- 6. ÜBUNGSFLÄCHE ---------- */
+/* Play-Knopf: graues Dreieck (nur CSS, keine Schriftzeichen) in rundem Knopf */
+.play {
+  display: block; margin: 0 auto 16px; width: 64px; height: 64px; padding: 0;
+  border-radius: 50%; border: 1px solid var(--border); background: var(--card-bg);
+  cursor: pointer; position: relative;
+}
+.play::before {
+  content: ""; position: absolute; top: 50%; left: 50%; width: 24px; height: 28px;
+  transform: translate(-35%, -50%); background: var(--text-secondary);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+/* Bilder: Web = nebeneinander, Handy = untereinander */
+.pics { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; justify-items: center; }
+.pic {
+  width: 100%; padding: 8px; box-sizing: border-box; aspect-ratio: 1;
+  background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px;
+  cursor: pointer; transition: border-color .15s;
+}
+.pic img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+@media (hover: hover) {
+  .pic:hover:not(:disabled) { border-color: color-mix(in srgb, var(--border), var(--mix-target) var(--focus-amount)); }
+}
+.pic.richtig, .pic.richtig:hover { border-color: var(--good); border-width: 5px; padding: 5px; }
+@media (max-width: 700px) {
+  .pics { grid-template-columns: 1fr; gap: 12px; }
+  .pic { width: min(100%, 34vh); }          /* beide Bilder + Play + Lichter passen aufs Handy */
+}
+/* Drei Lichter */
+.lights { display: flex; justify-content: center; gap: 22px; margin-top: 18px; }
+.light {
+  width: 34px; height: 34px; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid var(--border); background: var(--card-bg); transition: background .2s, border-color .2s;
+}
+.light.on { background: var(--good); border-color: var(--good); }
+
+/* ---------- 7. BEGRÜSSUNG / ENDE ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: color-mix(in srgb, var(--bg) 85%, transparent);
+}
+.overlay[hidden] { display: none; }
+.modal { width: 100%; max-width: 420px; text-align: center; }
+.modal p { margin: 0 0 20px; }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="themeToggle" aria-label="Tag/Nacht umschalten">☾</button>
+
+<main class="stack">
+  <section class="window">
+    <button class="play" id="playBtn" aria-label="Wort nochmal abspielen" disabled></button>
+    <div class="pics">
+      <button class="pic" id="picK" aria-label="Bild 1" disabled><img id="imgK" alt=""></button>
+      <button class="pic" id="picT" aria-label="Bild 2" disabled><img id="imgT" alt=""></button>
+    </div>
+    <div class="lights" aria-hidden="true">
+      <span class="light"></span><span class="light"></span><span class="light"></span>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="startBox">
+  <div class="window modal">
+    <h1>Hallo Tobi!</h1>
+    <p>Wir üben jetzt Wörter mit T und K.</p>
+    <button class="btn btn-emphasized" id="okBtn">OK</button>
+  </div>
+</div>
+
+<div class="overlay" id="endBox" hidden>
+  <div class="window modal">
+    <h1>Ende</h1>
+    <p>Du hast alles geschafft, prima!</p>
+    <button class="btn btn-emphasized" id="againBtn">Nochmal von vorn</button>
+  </div>
+</div>
+
+<script>
+/* ---------- Tag/Nacht (startet mit Systemeinstellung, läuft auch ohne Speicher) ---------- */
+const root = document.documentElement;
+const themeBtn = document.getElementById('themeToggle');
+let dark = true;
+try { dark = !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches); } catch (e) {}
+function setTheme(d) { root.setAttribute('data-theme', d ? 'dark' : 'light'); themeBtn.textContent = d ? '☀' : '☾'; }
+setTheme(dark);
+themeBtn.addEventListener('click', () => { dark = !dark; setTheme(dark); });
+
+/* ---------- Daten: 9 Wortpaare (K zuerst, dann T) ----------
+   Wort = gesprochener Text; Dateien heißen nach dem Wort (ü -> ue, Leerzeichen -> -) */
+const PAARE = [
+  ['kiefer', 'tiefer'], ['küken', 'tüten'], ['wecker', 'wetter'],
+  ['katze', 'tatze'], ['ein Kopf', 'ein Topf'], ['eine Kasse', 'eine Tasse'],
+  ['eine Kanne', 'eine Tanne'], ['kante', 'tante'], ['korken', 'torten']
+];
+const SERIE = 3;                                    // so oft in Folge richtig, dann nächstes Paar
+const slug = w => w.toLowerCase().replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae').replace(/ß/g, 'ss').replace(/ /g, '-');
+const wortAudio  = w => 'data/audio/katja/' + slug(w) + '_katja_langsam.mp3';
+const satzAudio  = n => 'data/audio/katja/satz_' + n + '_katja_langsam.mp3';
+const bild       = w => 'data/bilder_klein/' + slug(w) + '.webp';
+
+const $ = id => document.getElementById(id);
+const pics = { k: $('picK'), t: $('picT') };
+const imgs = { k: $('imgK'), t: $('imgT') };
+const lights = Array.from(document.querySelectorAll('.light'));
+const playBtn = $('playBtn');
+
+/* ---------- Ton: spielt eine Datei, meldet sich am Ende (auch bei Fehler, damit nie etwas hängt) ---------- */
+let aktuellerTon = null;
+function sprich(url) {
+  return new Promise(resolve => {
+    try { if (aktuellerTon) aktuellerTon.pause(); } catch (e) {}
+    let fertig = false;
+    const ende = () => { if (!fertig) { fertig = true; resolve(); } };
+    try {
+      const a = new Audio(url);
+      aktuellerTon = a;
+      a.addEventListener('ended', ende);
+      a.addEventListener('error', ende);
+      const p = a.play();
+      if (p && p.catch) p.catch(ende);
+      setTimeout(ende, 15000);                      // Notausgang
+    } catch (e) { ende(); }
+  });
+}
+const pause = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- Zustand ---------- */
+let reihenfolge = [], position = -1, serie = 0, aktuell = null, beschaeftigt = true;
+
+function mischen(n) {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function setzeLichter(n) { lights.forEach((l, i) => l.classList.toggle('on', i < n)); }
+function sperre(an) {
+  beschaeftigt = an;
+  pics.k.disabled = pics.t.disabled = playBtn.disabled = an;
+}
+function zeigePaar(paar) {
+  imgs.k.src = bild(paar[0]);
+  imgs.t.src = bild(paar[1]);
+  pics.k.classList.remove('richtig'); pics.t.classList.remove('richtig');
+}
+
+/* Neue Runde: zufällig eines der zwei Wörter des Paars sprechen */
+async function neueRunde() {
+  const paar = PAARE[reihenfolge[position]];
+  zeigePaar(paar);
+  const seite = Math.random() < 0.5 ? 0 : 1;       // 0 = K-Wort, 1 = T-Wort
+  aktuell = { paar, seite };
+  await pause(300);
+  await sprich(wortAudio(paar[seite]));
+  sperre(false);
+}
+
+async function naechstesPaar() {
+  position++;
+  serie = 0; setzeLichter(0);
+  if (position >= PAARE.length) { await ende(); return; }
+  await neueRunde();
+}
+
+async function ende() {
+  $('endBox').hidden = false;
+  await sprich(satzAudio('ende'));
+}
+
+async function antwort(gewaehlt) {                  // gewaehlt: 0 = K-Bild, 1 = T-Bild
+  if (beschaeftigt || !aktuell) return;
+  sperre(true);
+  const { paar, seite } = aktuell;
+  if (gewaehlt === seite) {
+    serie++;
+    setzeLichter(serie);
+    (gewaehlt === 0 ? pics.k : pics.t).classList.add('richtig');
+    if (serie >= SERIE) {
+      await sprich(satzAudio('level'));
+      await pause(400);
+      await naechstesPaar();
+    } else {
+      await sprich(satzAudio('richtig'));
+      await pause(300);
+      await neueRunde();
+    }
+  } else {
+    serie = 0; setzeLichter(0);
+    await sprich(satzAudio('falsch_' + slug(paar[gewaehlt]) + '_' + slug(paar[seite])));
+    await pause(300);
+    await neueRunde();
+  }
+}
+
+pics.k.addEventListener('click', () => antwort(0));
+pics.t.addEventListener('click', () => antwort(1));
+playBtn.addEventListener('click', async () => {
+  if (beschaeftigt || !aktuell) return;
+  sperre(true);
+  await sprich(wortAudio(aktuell.paar[aktuell.seite]));
+  sperre(false);
+});
+
+/* ---------- Start und Neustart ---------- */
+async function starten() {
+  reihenfolge = mischen(PAARE.length);
+  position = -1; serie = 0; setzeLichter(0);
+  sperre(true);
+  await naechstesPaar();
+}
+$('okBtn').addEventListener('click', async () => {      // der Klick erlaubt dem Handy den Ton
+  $('okBtn').disabled = true;
+  await sprich(satzAudio('begruessung'));
+  $('startBox').hidden = true;
+  await starten();
+});
+$('againBtn').addEventListener('click', async () => {
+  $('endBox').hidden = true;
+  await starten();
+});
+</script>
+</body>
+</html>
