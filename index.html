@@ -9,7 +9,8 @@
 /* ============================================================
    K-und-T-Übung für Tobi. Design nach Vorlage (referenz_design.html).
    Aufbau: 1 Schriften, 2 Farben, 3 Seite, 4 Fenster, 5 Buttons,
-           6 Übungsfläche (Play, Bilder, Lichter), 7 Begrüßung/Ende
+           6 Übungsfläche (Play, Bilder, Lichter), 7 Fenster (Begrüßung, Spinne, Zahnrad),
+           8 Terrarium
    ============================================================ */
 
 /* ---------- 1. SCHRIFTEN (lokal aus data/@fonts) ---------- */
@@ -57,6 +58,7 @@ body {
   font-size: 18px; line-height: 1.5;
 }
 h1 { font-family: var(--font-comic); color: var(--text-emphasis); margin: 0 0 10px; font-size: 28px; text-align: center; }
+[hidden] { display: none !important; }
 
 /* ---------- 4. FENSTER ---------- */
 .window {
@@ -82,13 +84,17 @@ button:disabled { pointer-events: none; }
     border-color: color-mix(in srgb, var(--border), var(--mix-target) var(--focus-amount));
   }
 }
-.theme-toggle {
-  position: fixed; top: 14px; right: 18px; z-index: 5;
+/* Runde Eck-Knöpfe: Zahnrad links, Sonne/Mond rechts */
+.corner {
+  position: fixed; top: 14px; z-index: 60;
   width: 34px; height: 34px; padding: 0; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--card-bg); color: var(--text-primary);
   border: 1px solid var(--border); font-size: 16px; cursor: pointer;
 }
+.corner.left  { left: 18px; }
+.corner.right { right: 18px; }
+.corner svg { width: 20px; height: 20px; color: var(--text-secondary); }
 
 /* ---------- 6. ÜBUNGSFLÄCHE ---------- */
 /* Play-Knopf: graues Dreieck (nur CSS, keine Schriftzeichen) in rundem Knopf */
@@ -118,54 +124,162 @@ button:disabled { pointer-events: none; }
   .pics { grid-template-columns: 1fr; gap: 12px; }
   .pic { width: min(100%, 34vh); }          /* beide Bilder + Play + Lichter passen aufs Handy */
 }
-/* Drei Lichter */
-.lights { display: flex; justify-content: center; gap: 22px; margin-top: 18px; }
+/* Lichter: Anzahl wird per Stufe gesetzt (3, 5 oder 7) */
+.lights { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
 .light {
-  width: 34px; height: 34px; border-radius: 50%; box-sizing: border-box;
+  width: 30px; height: 30px; border-radius: 50%; box-sizing: border-box;
   border: 2px solid var(--border); background: var(--card-bg); transition: background .2s, border-color .2s;
 }
 .light.on { background: var(--good); border-color: var(--good); }
 
-/* ---------- 7. BEGRÜSSUNG / ENDE ---------- */
+/* ---------- 7. FENSTER ÜBER DER SEITE ---------- */
 .overlay {
-  position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
-  padding: 16px; background: color-mix(in srgb, var(--bg) 85%, transparent);
+  position: fixed; inset: 0; z-index: 50; display: flex;     /* Fenster mittig per margin:auto (wird oben nie abgeschnitten) */
+  padding: 16px; background: color-mix(in srgb, var(--bg) 85%, transparent); overflow-y: auto;
 }
-.overlay[hidden] { display: none; }
-.modal { width: 100%; max-width: 420px; text-align: center; }
+.modal { width: 100%; max-width: 420px; text-align: center; margin: auto; }
 .modal p { margin: 0 0 20px; }
+/* Superheld = Startknopf: Klick aufs Bild startet die Übung */
+.held-btn { display: block; width: 100%; padding: 0; margin: 0; border: none; background: transparent; cursor: pointer; }
+.modal img.held { width: min(100%, 360px); max-height: 60vh; object-fit: contain; display: block; margin: 0 auto; pointer-events: none; }
+.modal img.spinne { width: min(100%, 320px); max-height: 42vh; object-fit: contain; display: block; margin: 0 auto 12px; }
+.modal .name { font-family: var(--font-comic); color: var(--text-emphasis); font-size: 22px; margin-bottom: 16px; }
+.modal .stufe-btn { display: block; width: 100%; margin-bottom: 10px; }
+.modal .stufe-hinweis { font-size: 15px; color: var(--text-secondary); margin: 14px 0 0; }
+/* Spinnen-Fenster: fast nur Bild. Weiter per Wischen (Handy) oder kleinem Pfeil-Knopf. */
+#spinneBox { padding: 6px; }                 /* ganz wenig Rand um das Fenster */
+/* Fensterbreite = Bildbreite: auf niedrigen Bildschirmen (Rechner) wird das Bild durch 78vh begrenzt,
+   das Fenster schrumpft dann mit, damit links und rechts nur der kleine Rand bleibt. */
+.spinne-modal { max-width: min(546px, 78vh); padding: 6px 6px 10px; }
+.spinne-modal img.spinne { width: 100%; max-height: 78vh; margin: 0; touch-action: pan-y; user-select: none; -webkit-user-drag: none; }
+/* Eine Zeile unter dem Bild: Name mittig, Pfeil gleich daneben (Gruppe zusammen mittig) */
+.spinne-modal .fuss { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 6px; }
+.spinne-modal .name { font-size: 20px; margin: 0; }
+/* ↺ "nochmal anhören": links vom Namen, wie ein Teil des Textes (kein Knopf-Rahmen) */
+.nochmal {
+  flex: none; display: block; width: 40px; height: 40px; margin: 0; padding: 0;
+  border: none; background: transparent; color: var(--text-secondary); cursor: pointer;
+}
+.nochmal svg { display: block; width: 24px; height: 24px; margin: 0 auto; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+@media (hover: hover) { .nochmal:hover { color: var(--text-emphasis); } }
+/* Pfeil ➜ (nur CSS-Form): kein Knopf-Rahmen, grau, anklickbar */
+.weiter-pfeil {
+  position: relative; display: block; flex: none; width: 48px; height: 40px; margin: 0; padding: 0;
+  border: none; background: transparent; color: var(--text-secondary); cursor: pointer;
+}
+.weiter-pfeil::before {
+  content: ""; position: absolute; top: 50%; left: 50%; width: 26px; height: 20px;
+  transform: translate(-50%, -50%); background: currentColor;
+  clip-path: polygon(0 36%, 58% 36%, 58% 0, 100% 50%, 58% 100%, 58% 64%, 0 64%);
+}
+@media (hover: hover) {
+  .weiter-pfeil:hover { color: var(--text-emphasis); }
+}
+
+/* Info-Knopf im Startfenster (kleiner Kreis mit "i") und Info-Fenster */
+.info-btn {
+  position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--card-bg); color: var(--text-secondary);
+  font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; z-index: 2;
+}
+@media (hover: hover) { .info-btn:hover { border-width: 2px; border-color: color-mix(in srgb, var(--border), var(--mix-target) var(--focus-amount)); } }
+.info-modal { max-width: 560px; text-align: left; }
+.info-modal h1 { text-align: center; }
+.info-modal h2 { font-family: var(--font-comic); color: var(--text-emphasis); font-size: 19px; margin: 14px 0 6px; }
+.info-modal p { font-size: 16px; line-height: 1.55; margin: 0 0 10px; text-align: justify; hyphens: auto; }
+.info-modal .btn { display: block; margin: 16px auto 0; }
+
+/* ---------- 8. TERRARIUM ---------- */
+.terrarium { max-width: 520px; margin: 0 auto; padding-top: 30px; }
+.terrarium .tier {
+  display: block; width: 100%; margin-bottom: 18px; padding: 16px; box-sizing: border-box;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: var(--window-shadow, none); cursor: pointer; font: inherit; color: var(--text-primary);
+}
+.terrarium .tier img { display: block; width: 100%; max-height: 60vh; object-fit: contain; pointer-events: none; }
+.terrarium .tier span { display: block; margin-top: 8px; font-family: var(--font-comic); font-size: 20px; color: var(--text-emphasis); }
 </style>
 </head>
 <body>
 
-<button class="theme-toggle" id="themeToggle" aria-label="Tag/Nacht umschalten">☾</button>
+<button class="corner left" id="gearBtn" aria-label="Schwierigkeit einstellen">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-dasharray="3.4 3.4"/>
+    <circle cx="12" cy="12" r="6.4" fill="currentColor"/>
+    <circle cx="12" cy="12" r="2.6" fill="var(--card-bg)"/>
+  </svg>
+</button>
+<button class="corner right" id="themeToggle" aria-label="Tag/Nacht umschalten">☾</button>
 
-<main class="stack">
+<main class="stack" id="uebung">
   <section class="window">
     <button class="play" id="playBtn" aria-label="Wort nochmal abspielen" disabled></button>
     <div class="pics">
       <button class="pic" id="picK" aria-label="Bild 1" disabled><img id="imgK" alt=""></button>
       <button class="pic" id="picT" aria-label="Bild 2" disabled><img id="imgT" alt=""></button>
     </div>
-    <div class="lights" aria-hidden="true">
-      <span class="light"></span><span class="light"></span><span class="light"></span>
-    </div>
+    <div class="lights" id="lights" aria-hidden="true"></div>
   </section>
 </main>
 
+<section class="terrarium" id="terrarium" hidden>
+  <h1>Terrarium</h1>
+  <div id="tiere"></div>
+</section>
+
+<!-- Begrüßung -->
 <div class="overlay" id="startBox">
-  <div class="window modal">
-    <h1>Hallo Tobi!</h1>
-    <p>Wir üben jetzt Wörter mit T und K.</p>
-    <button class="btn btn-emphasized" id="okBtn">OK</button>
+  <div class="window modal" style="position: relative;">
+    <button class="info-btn" id="infoBtn" aria-label="Info: Worum geht es?">i</button>
+    <button class="held-btn" id="okBtn" aria-label="Auf geht's!"><img class="held" src="data/bilder_klein/superheld.webp" alt=""></button>
   </div>
 </div>
 
-<div class="overlay" id="endBox" hidden>
+<!-- Info: worum geht es, wie funktioniert es -->
+<div class="overlay" id="infoBox" hidden>
+  <div class="window modal info-modal">
+    <h1>Info</h1>
+    <h2>Worum geht es?</h2>
+    <p>Manche Kinder sprechen K wie T aus, zum Beispiel „Tuchen“ statt „Kuchen“. Das nennt man Fronting (Vorverlagerung): Der Laut wird zu weit vorne im Mund gebildet. Bei kleinen Kindern kommt das häufig vor. Wer einen Laut richtig sprechen will, muss ihn aber zuerst richtig hören und vom anderen Laut unterscheiden können. Genau das übt diese App, mit Wortpaaren, die sich nur durch K oder T unterscheiden, zum Beispiel Kante und Tante.</p>
+    <h2>So funktioniert's</h2>
+    <p>Ihr hört ein Wort und tippt das passende Bild an. Das Wort wird nur gesprochen, nicht geschrieben. Mit dem Dreieck könnt ihr es nochmal hören. Für jede richtige Antwort leuchtet ein grünes Licht auf. Bei einer falschen fangen die Lichter von vorn an, und die Stimme sagt, was richtig gewesen wäre. Sind alle Lichter an, ist das Wortpaar geschafft. Nach jedem dritten Wortpaar wird eine Spinne freigeschaltet. Es gibt 3 Level mit 3, 5 und 7 richtigen Antworten in Folge. Das Zahnrad links oben stellt das Level ein. Der Fortschritt wird auf diesem Gerät gespeichert. Am schönsten ist es, wenn ihr gemeinsam übt und die Wörter nachsprecht.</p>
+    <button class="btn btn-emphasized" id="infoZu">Schließen</button>
+  </div>
+</div>
+
+<!-- Ansprache nach Level 1 und 2: Superheld, Klick startet das nächste Level -->
+<div class="overlay" id="levelBox" hidden>
   <div class="window modal">
-    <h1>Ende</h1>
-    <p>Du hast alles geschafft, prima!</p>
-    <button class="btn btn-emphasized" id="againBtn">Nochmal von vorn</button>
+    <button class="held-btn" id="levelBtn" aria-label="Weiter zum nächsten Level"><img class="held" src="data/bilder_klein/superheld.webp" alt=""></button>
+  </div>
+</div>
+
+<!-- Neue Spinne freigeschaltet -->
+<div class="overlay" id="spinneBox" hidden>
+  <div class="window modal spinne-modal">
+    <img class="spinne" id="spinneBild" alt="">
+    <div class="fuss">
+      <button class="nochmal" id="nochmalBtn" aria-label="Nochmal anhören">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      </button>
+      <div class="name" id="spinneName"></div>
+      <button class="weiter-pfeil" id="weiterBtn" aria-label="Weiter"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Zahnrad: Schwierigkeit -->
+<div class="overlay" id="gearBox" hidden>
+  <div class="window modal">
+    <h1>Level</h1>
+    <button class="btn stufe-btn" data-stufe="1">Level 1: 3 in Folge</button>
+    <button class="btn stufe-btn" data-stufe="2">Level 2: 5 in Folge</button>
+    <button class="btn stufe-btn" data-stufe="3">Level 3: 7 in Folge</button>
+    <p class="stufe-hinweis">Ein neues Level beginnt sofort von vorn. Die Spinnen der früheren Levels gelten dann als freigeschaltet.</p>
+    <button class="btn" id="resetBtn">Alles zurücksetzen</button>
+    <p></p>
+    <button class="btn btn-emphasized" id="gearZu">Schließen</button>
   </div>
 </div>
 
@@ -179,138 +293,339 @@ function setTheme(d) { root.setAttribute('data-theme', d ? 'dark' : 'light'); th
 setTheme(dark);
 themeBtn.addEventListener('click', () => { dark = !dark; setTheme(dark); });
 
-/* ---------- Daten: 9 Wortpaare (K zuerst, dann T) ----------
-   Wort = gesprochener Text; Dateien heißen nach dem Wort (ü -> ue, Leerzeichen -> -) */
+/* ---------- Daten ----------
+   9 Wortpaare (K zuerst, dann T). Dateien heißen nach dem Wort (ü -> ue, Leerzeichen -> -). */
 const PAARE = [
   ['kiefer', 'tiefer'], ['küken', 'tüten'], ['wecker', 'wetter'],
   ['katze', 'tatze'], ['ein Kopf', 'ein Topf'], ['eine Kasse', 'eine Tasse'],
   ['eine Kanne', 'eine Tanne'], ['kante', 'tante'], ['korken', 'torten']
 ];
-const SERIE = 3;                                    // so oft in Folge richtig, dann nächstes Paar
+/* Spinnen in fester Reihenfolge nach Coolness. Level 1 schaltet Nr. 1-3 frei, Level 2 Nr. 4-6, Level 3 Nr. 7-9. */
+const SPINNEN = [
+  { name: 'Hauswinkelspinne', datei: 's3_hauswinkel' },
+  { name: 'Zitterspinne',     datei: 's9_zitterspinne' },
+  { name: 'Weberknecht',      datei: 's8_weberknecht' },
+  { name: 'Listspinne',       datei: 's4_listspinne' },
+  { name: 'Wolfsspinne',      datei: 's5_wolfsspinne' },
+  { name: 'Wasserspinne',     datei: 's2_wasserspinne' },
+  { name: 'Ammen-Dornfinger', datei: 's1_dornfinger' },
+  { name: 'Vogelspinne',      datei: 's7_vogelspinne' },
+  { name: 'Schwarze Witwe',   datei: 's6_witwe' }
+];
+const SERIE = { 1: 3, 2: 5, 3: 7 };          // Stufe -> so oft in Folge richtig
 const slug = w => w.toLowerCase().replace(/ü/g, 'ue').replace(/ö/g, 'oe').replace(/ä/g, 'ae').replace(/ß/g, 'ss').replace(/ /g, '-');
-const wortAudio  = w => 'data/audio/katja/' + slug(w) + '_katja_langsam.mp3';
-const satzAudio  = n => 'data/audio/katja/satz_' + n + '_katja_langsam.mp3';
-const bild       = w => 'data/bilder_klein/' + slug(w) + '.webp';
+const ton_   = n => 'data/audio/app/' + n + '.mp3';          // Stimme: Datei im Ordner data/audio/app
+const bild   = w => 'data/bilder_klein/' + slug(w) + '.webp';
+const spinnenBild = s => 'data/spinnen_klein/' + s.datei + '.webp';
 
 const $ = id => document.getElementById(id);
 const pics = { k: $('picK'), t: $('picT') };
 const imgs = { k: $('imgK'), t: $('imgT') };
-const lights = Array.from(document.querySelectorAll('.light'));
 const playBtn = $('playBtn');
-
-/* ---------- Ton: spielt eine Datei, meldet sich am Ende (auch bei Fehler, damit nie etwas hängt) ---------- */
-let aktuellerTon = null;
-function sprich(url) {
-  return new Promise(resolve => {
-    try { if (aktuellerTon) aktuellerTon.pause(); } catch (e) {}
-    let fertig = false;
-    const ende = () => { if (!fertig) { fertig = true; resolve(); } };
-    try {
-      const a = new Audio(url);
-      aktuellerTon = a;
-      a.addEventListener('ended', ende);
-      a.addEventListener('error', ende);
-      const p = a.play();
-      if (p && p.catch) p.catch(ende);
-      setTimeout(ende, 15000);                      // Notausgang
-    } catch (e) { ende(); }
-  });
-}
-const pause = ms => new Promise(r => setTimeout(r, ms));
-
-/* ---------- Zustand ---------- */
-let reihenfolge = [], position = -1, serie = 0, aktuell = null, beschaeftigt = true;
 
 function mischen(n) {
   const a = Array.from({ length: n }, (_, i) => i);
   for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
-function setzeLichter(n) { lights.forEach((l, i) => l.classList.toggle('on', i < n)); }
-function sperre(an) {
-  beschaeftigt = an;
-  pics.k.disabled = pics.t.disabled = playBtn.disabled = an;
+const pause = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- Ton ----------
+   Ein einziges Audio-Element für alles (Handys geben es nach dem ersten Klick dauerhaft frei).
+   spiele([...]) spielt mehrere Dateien direkt nacheinander. Ein neuer Aufruf beendet den alten sofort. */
+const ton = new Audio();
+let offenesEnde = null, folgeNr = 0;
+function sprich(url) {
+  return new Promise(resolve => {
+    if (offenesEnde) offenesEnde();
+    let fertig = false;
+    const ende = () => {
+      if (fertig) return;
+      fertig = true;
+      ton.removeEventListener('ended', ende);
+      ton.removeEventListener('error', ende);
+      if (offenesEnde === ende) offenesEnde = null;
+      resolve();
+    };
+    offenesEnde = ende;
+    ton.addEventListener('ended', ende);
+    ton.addEventListener('error', ende);
+    try {
+      ton.pause();
+      ton.src = url;
+      const p = ton.play();
+      if (p && p.catch) p.catch(ende);
+    } catch (e) { ende(); }
+    setTimeout(ende, 30000);                        // Notausgang
+  });
 }
+async function spiele(namen) {
+  const nr = ++folgeNr;
+  for (const n of namen) {
+    if (nr !== folgeNr) return;
+    await sprich(ton_(n));
+  }
+}
+function stopTon() {
+  folgeNr++;
+  try { ton.pause(); } catch (e) {}
+  if (offenesEnde) offenesEnde();
+}
+
+/* ---------- Gespeicherter Stand (Browser-Speicher, alles in try/catch) ----------
+   stufe: aktuelles Level 1-3 (Standard: 1)
+   stufen[n].erledigt: geschaffte Wortpaare dieses Levels (0-8), fertig = Level abgeschlossen
+   spinnen: freigeschaltete Spinnen (Nummern 0-8 in Coolness-Reihenfolge), gelten für alle Levels zusammen */
+const KEY = 'kt-trainer-v2';
+const frischeStufe = () => ({ erledigt: [], fertig: false });
+const frischerStand = () => ({ stufe: 1, stufen: { 1: frischeStufe(), 2: frischeStufe(), 3: frischeStufe() }, spinnen: [] });
+function laden() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  if (!s || typeof s !== 'object' || !s.stufen) s = frischerStand();
+  if (![1, 2, 3].includes(s.stufe)) s.stufe = 1;
+  for (const k of [1, 2, 3]) {
+    const e = s.stufen[k];
+    s.stufen[k] = (e && Array.isArray(e.erledigt))
+      ? { erledigt: e.erledigt.filter(i => i >= 0 && i < 9), fertig: !!e.fertig } : frischeStufe();
+  }
+  s.spinnen = Array.isArray(s.spinnen) ? s.spinnen.filter((i, p, a) => i >= 0 && i < 9 && a.indexOf(i) === p) : [];
+  // Neues Öffnen nach abgeschlossenem Level 3: wieder Level 3 üben (die Spinnen bleiben frei)
+  if (s.stufen[s.stufe].fertig) s.stufen[s.stufe] = frischeStufe();
+  return s;
+}
+/* Level wählen (Zahnrad): neu von vorn; die Spinnen früherer Levels gelten dann als freigeschaltet */
+function waehleLevel(n) {
+  S.stufe = n;
+  S.stufen[n] = frischeStufe();
+  for (let i = 0; i < (n - 1) * 3; i++) if (!S.spinnen.includes(i)) S.spinnen.push(i);
+  speichern();
+}
+function speichern() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+let S = laden();
+speichern();
+const stand = () => S.stufen[S.stufe];
+
+/* ---------- Anzeige ---------- */
+function baueLichter() {
+  const box = $('lights');
+  box.textContent = '';
+  for (let i = 0; i < SERIE[S.stufe]; i++) { const l = document.createElement('span'); l.className = 'light'; box.appendChild(l); }
+}
+function setzeLichter(n) { Array.from($('lights').children).forEach((l, i) => l.classList.toggle('on', i < n)); }
+let beschaeftigt = true;
+function sperre(an) { beschaeftigt = an; pics.k.disabled = pics.t.disabled = playBtn.disabled = an; }
 function zeigePaar(paar) {
   imgs.k.src = bild(paar[0]);
   imgs.t.src = bild(paar[1]);
   pics.k.classList.remove('richtig'); pics.t.classList.remove('richtig');
 }
 
-/* Neue Runde: zufällig eines der zwei Wörter des Paars sprechen */
-async function neueRunde() {
+/* ---------- Ablauf ---------- */
+let lauf = 0;                       // Zählt Neustarts. Alte, noch wartende Abläufe merken das und hören auf.
+let reihenfolge = [], position = 0, serie = 0, aktuell = null, weiterWarten = null;
+const gueltig = tok => tok === lauf;
+
+async function starten() {
+  const tok = ++lauf;
+  stopTon();
+  if (weiterWarten) { weiterWarten(); weiterWarten = null; }
+  ['startBox', 'spinneBox', 'gearBox', 'levelBox', 'infoBox'].forEach(id => { $(id).hidden = true; });
+  $('terrarium').hidden = true; $('uebung').hidden = false;
+  baueLichter(); serie = 0; setzeLichter(0);
+  sperre(true);
+  const e = stand().erledigt;
+  reihenfolge = mischen(9).filter(i => !e.includes(i));      // nur Paare, die noch nicht geklappt haben
+  position = 0;
+  if (!reihenfolge.length) { stand().fertig = true; speichern(); await terrarium(tok, false); return; }
+  await neueRunde(tok);
+}
+
+async function neueRunde(tok) {
   const paar = PAARE[reihenfolge[position]];
   zeigePaar(paar);
-  const seite = Math.random() < 0.5 ? 0 : 1;       // 0 = K-Wort, 1 = T-Wort
-  aktuell = { paar, seite };
+  aktuell = { paar, seite: Math.random() < 0.5 ? 0 : 1 };   // 0 = K-Wort, 1 = T-Wort
   await pause(300);
-  await sprich(wortAudio(paar[seite]));
-  sperre(false);
+  if (!gueltig(tok)) return;
+  sperre(false);                                // Bilder sind schon beim Sprechen anklickbar
+  await spiele(['w_' + slug(paar[aktuell.seite])]);
 }
 
-async function naechstesPaar() {
-  position++;
-  serie = 0; setzeLichter(0);
-  if (position >= PAARE.length) { await ende(); return; }
-  await neueRunde();
-}
-
-async function ende() {
-  $('endBox').hidden = false;
-  await sprich(satzAudio('ende'));
-}
-
-async function antwort(gewaehlt) {                  // gewaehlt: 0 = K-Bild, 1 = T-Bild
+async function antwort(gewaehlt) {              // 0 = K-Bild, 1 = T-Bild
   if (beschaeftigt || !aktuell) return;
+  const tok = lauf;
   sperre(true);
   const { paar, seite } = aktuell;
   if (gewaehlt === seite) {
     serie++;
     setzeLichter(serie);
     (gewaehlt === 0 ? pics.k : pics.t).classList.add('richtig');
-    if (serie >= SERIE) {
-      await sprich(satzAudio('level'));
-      await pause(400);
-      await naechstesPaar();
-    } else {
-      await sprich(satzAudio('richtig'));
-      await pause(300);
-      await neueRunde();
-    }
+    if (serie >= SERIE[S.stufe]) { await paarGeschafft(tok); return; }
+    await spiele(['richtig']);
+    if (!gueltig(tok)) return;
+    await pause(300);
+    if (!gueltig(tok)) return;
+    await neueRunde(tok);
   } else {
     serie = 0; setzeLichter(0);
-    await sprich(satzAudio('falsch_' + slug(paar[gewaehlt]) + '_' + slug(paar[seite])));
+    // fertiger Satz "Nicht ganz, du hast X angeklickt. Richtig wäre aber Y. ..." (aus Bauteilen per ffmpeg gebaut)
+    await spiele(['falsch_' + slug(paar[gewaehlt]) + '_' + slug(paar[seite])]);
+    if (!gueltig(tok)) return;
     await pause(300);
-    await neueRunde();
+    if (!gueltig(tok)) return;
+    await neueRunde(tok);
   }
+}
+
+async function paarGeschafft(tok) {
+  const st = stand();
+  const nr = reihenfolge[position];
+  if (!st.erledigt.includes(nr)) st.erledigt.push(nr);
+  speichern();
+  await spiele(['level']);
+  if (!gueltig(tok)) return;
+  await pause(400);
+  if (!gueltig(tok)) return;
+  // Nur nach dem 3., 6. und 9. Paar eines Levels: neue Spinne (feste Reihenfolge, Level 1 = Nr. 1-3, Level 2 = 4-6, Level 3 = 7-9)
+  let alleNeu = false;
+  if (st.erledigt.length % 3 === 0) {
+    const nr = (S.stufe - 1) * 3 + st.erledigt.length / 3 - 1;
+    if (!S.spinnen.includes(nr)) {
+      S.spinnen.push(nr); speichern();
+      const spinne = SPINNEN[nr];
+      aktuelleSpinne = spinne;
+      $('spinneBild').src = spinnenBild(spinne);
+      $('spinneName').textContent = spinne.name;
+      $('spinneBox').hidden = false;
+      const warte = new Promise(r => { weiterWarten = r; });
+      spiele(['neue_spinne', spinne.datei]);    // nicht abwarten: Pfeil oder Wischen darf jederzeit weitergehen
+      await warte;
+      if (!gueltig(tok)) return;
+      $('spinneBox').hidden = true;
+      stopTon();
+      alleNeu = S.spinnen.length >= 9;
+    }
+  }
+  if (st.erledigt.length >= 9) { await levelEnde(tok, alleNeu); return; }
+  position++; serie = 0; setzeLichter(0);
+  await pause(200);
+  if (!gueltig(tok)) return;
+  await neueRunde(tok);
+}
+
+/* Level geschafft (9 Paare). Level 1 und 2: Ansprache mit dem Superhelden, Klick startet das nächste Level.
+   Level 3: Terrarium (mit der Ansage "alle Spinnen", wenn gerade die letzte frei wurde). */
+async function levelEnde(tok, alleNeu) {
+  const fertigesLevel = S.stufe;
+  stand().fertig = true;
+  if (fertigesLevel >= 3) { speichern(); await terrarium(tok, alleNeu); return; }
+  S.stufe = fertigesLevel + 1;                  // beim nächsten Öffnen geht es hier weiter
+  if (stand().fertig) S.stufen[S.stufe] = frischeStufe();
+  speichern();
+  $('levelBox').hidden = false;
+  const warte = new Promise(r => { weiterWarten = r; });
+  spiele(['level' + fertigesLevel + '_geschafft']);
+  await warte;
+  if (!gueltig(tok)) return;
+  stopTon();
+  await starten();
+}
+
+/* Terrarium: alle freigeschalteten Spinnen untereinander, Tippen spielt den Infotext */
+async function terrarium(tok, ansage) {
+  const box = $('tiere');
+  box.textContent = '';
+  S.spinnen.slice().sort((a, b) => a - b).forEach(i => {
+    const s = SPINNEN[i];
+    const b = document.createElement('button');
+    b.className = 'tier'; b.type = 'button';
+    const im = document.createElement('img'); im.src = spinnenBild(s); im.alt = '';
+    const nm = document.createElement('span'); nm.textContent = s.name;
+    b.append(im, nm);
+    b.addEventListener('click', () => spiele([s.datei]));
+    box.appendChild(b);
+  });
+  $('uebung').hidden = true; $('terrarium').hidden = false;
+  window.scrollTo(0, 0);
+  if (ansage) await spiele(['spinnen_alle']);
 }
 
 pics.k.addEventListener('click', () => antwort(0));
 pics.t.addEventListener('click', () => antwort(1));
-playBtn.addEventListener('click', async () => {
+playBtn.addEventListener('click', () => {
   if (beschaeftigt || !aktuell) return;
-  sperre(true);
-  await sprich(wortAudio(aktuell.paar[aktuell.seite]));
-  sperre(false);
+  spiele(['w_' + slug(aktuell.paar[aktuell.seite])]);
+});
+let aktuelleSpinne = null;
+$('nochmalBtn').addEventListener('click', () => { if (aktuelleSpinne) spiele([aktuelleSpinne.datei]); });   // Infotext nochmal
+const spinneWeiter = () => { if (weiterWarten) { weiterWarten(); weiterWarten = null; } };
+$('weiterBtn').addEventListener('click', spinneWeiter);
+/* Wischen: Bild mit dem Finger wegschieben (weit genug, in beliebige Richtung) = weiter */
+(function () {
+  const b = $('spinneBild');
+  let x0 = null, y0 = null;
+  b.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; }, { passive: true });
+  b.addEventListener('touchmove', e => {
+    if (x0 === null) return;
+    b.style.transform = 'translate(' + (e.touches[0].clientX - x0) + 'px, 0)';
+  }, { passive: true });
+  b.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    x0 = y0 = null; b.style.transform = '';
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > 60) spinneWeiter();
+  });
+  b.addEventListener('touchcancel', () => { x0 = y0 = null; b.style.transform = ''; });
+})();
+
+/* Ansprache nach Level 1/2: Klick aufs Superhelden-Bild geht weiter (startet das nächste Level) */
+$('levelBtn').addEventListener('click', spinneWeiter);
+
+/* ---------- Begrüßung ---------- */
+$('okBtn').addEventListener('click', async () => {        // der Klick erlaubt dem Handy den Ton
+  $('okBtn').disabled = true;
+  await spiele(['aufgehts']);
+  await starten();
+});
+/* Info-Fenster */
+$('infoBtn').addEventListener('click', () => { $('infoBox').hidden = false; });
+$('infoZu').addEventListener('click', () => { $('infoBox').hidden = true; });
+$('infoBox').addEventListener('click', e => { if (e.target === $('infoBox')) $('infoBox').hidden = true; });
+
+/* ---------- Zahnrad: Stufe wählen ---------- */
+function zeigeStufen() {
+  document.querySelectorAll('.stufe-btn').forEach(b => {
+    b.classList.toggle('btn-emphasized', Number(b.dataset.stufe) === S.stufe);
+  });
+}
+$('gearBtn').addEventListener('click', () => { zeigeStufen(); $('gearBox').hidden = false; });
+$('gearZu').addEventListener('click', () => { $('gearBox').hidden = true; });
+$('gearBox').addEventListener('click', e => { if (e.target === $('gearBox')) $('gearBox').hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('gearBox').hidden = true; $('infoBox').hidden = true; } });
+document.querySelectorAll('.stufe-btn').forEach(b => {
+  b.addEventListener('click', async () => {
+    const neu = Number(b.dataset.stufe);
+    $('gearBox').hidden = true;
+    if ($('startBox').hidden === false) { waehleLevel(neu); return; }      // vor dem Start: nur merken
+    if (neu === S.stufe) return;                                           // gleiches Level: nichts ändern
+    waehleLevel(neu);
+    await starten();
+  });
+});
+$('resetBtn').addEventListener('click', async () => {
+  let ja = true;
+  try { ja = confirm('Wirklich alles zurücksetzen (Level, Fortschritt und Spinnen)?'); } catch (e) {}
+  if (!ja) return;
+  S = frischerStand();
+  speichern();
+  $('gearBox').hidden = true;
+  if ($('startBox').hidden === false) return;
+  await starten();
 });
 
-/* ---------- Start und Neustart ---------- */
-async function starten() {
-  reihenfolge = mischen(PAARE.length);
-  position = -1; serie = 0; setzeLichter(0);
-  sperre(true);
-  await naechstesPaar();
-}
-$('okBtn').addEventListener('click', async () => {      // der Klick erlaubt dem Handy den Ton
-  $('okBtn').disabled = true;
-  await sprich(satzAudio('begruessung'));
-  $('startBox').hidden = true;
-  await starten();
-});
-$('againBtn').addEventListener('click', async () => {
-  $('endBox').hidden = true;
-  await starten();
-});
+/* Vor dem OK ist nur die Begrüßung zu sehen: Übungsfläche vorbereiten */
+baueLichter();
 </script>
 </body>
 </html>
