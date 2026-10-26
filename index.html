@@ -97,12 +97,14 @@ button:disabled { pointer-events: none; }
   position: fixed; top: 14px; z-index: 60;
   width: 34px; height: 34px; padding: 0; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  background: var(--card-bg); color: var(--text-primary);
+  background: var(--card-bg); color: var(--text-secondary);      /* grau, nie blau */
   border: 1px solid var(--border); font-size: 16px; cursor: pointer;
 }
 .corner.left  { left: 18px; }
 .corner.right { right: 18px; }
 .corner svg { width: 20px; height: 20px; color: var(--text-secondary); }
+/* Sonne und Mond sind gezeichnete Linien (keine Schriftzeichen: Handys malen die sonst als bunte Symbole) */
+.corner svg.linie { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---------- 6. ÜBUNGSFLÄCHE ---------- */
 /* Play-Knopf: graues Dreieck (nur CSS, keine Schriftzeichen) in rundem Knopf */
@@ -152,7 +154,8 @@ button:disabled { pointer-events: none; }
 .modal img.held { width: min(100%, 360px); max-height: 60vh; object-fit: contain; display: block; margin: 0 auto; pointer-events: none; }
 .modal img.spinne { width: min(100%, 320px); max-height: 42vh; object-fit: contain; display: block; margin: 0 auto 12px; }
 .modal .name { font-family: var(--font-comic); color: var(--text-emphasis); font-size: 22px; margin-bottom: 16px; }
-.modal .stufe-btn { display: block; width: 100%; margin-bottom: 10px; }
+.modal .stufe-btn, .modal .btn-block { display: block; width: 100%; margin-bottom: 10px; }
+.info-btn svg { display: block; width: 20px; height: 20px; margin: 0 auto; }
 .modal .stufe-hinweis { font-size: 15px; color: var(--text-secondary); margin: 14px 0 0; }
 /* Spinnen-Fenster: fast nur Bild. Weiter per Wischen (Handy) oder kleinem Pfeil-Knopf. */
 #spinneBox { padding: 6px; }                 /* ganz wenig Rand um das Fenster */
@@ -206,6 +209,8 @@ button:disabled { pointer-events: none; }
   box-shadow: var(--window-shadow, none); cursor: pointer; font: inherit; color: var(--text-primary);
 }
 .terrarium .tier img { display: block; width: 100%; max-height: 60vh; object-fit: contain; pointer-events: none; }
+.terrarium .unten { text-align: center; padding: 6px 0 30px; }
+.spinne-modal img.spinne { cursor: pointer; }          /* Tipp aufs Bild spielt den Infotext */
 .terrarium .tier span { display: block; margin-top: 8px; font-family: var(--font-comic); font-size: 20px; color: var(--text-emphasis); }
 </style>
 </head>
@@ -218,7 +223,7 @@ button:disabled { pointer-events: none; }
     <circle cx="12" cy="12" r="2.6" fill="var(--card-bg)"/>
   </svg>
 </button>
-<button class="corner right" id="themeToggle" aria-label="Tag/Nacht umschalten">☾</button>
+<button class="corner right" id="themeToggle" aria-label="Tag/Nacht umschalten"></button>
 
 <main class="stack" id="uebung">
   <section class="window">
@@ -234,6 +239,7 @@ button:disabled { pointer-events: none; }
 <section class="terrarium" id="terrarium" hidden>
   <h1>Terrarium</h1>
   <div id="tiere"></div>
+  <div class="unten"><button class="btn btn-emphasized" id="weiterUebenBtn">Weiter üben</button></div>
 </section>
 
 <!-- Begrüßung -->
@@ -279,15 +285,34 @@ button:disabled { pointer-events: none; }
 
 <!-- Zahnrad: Schwierigkeit -->
 <div class="overlay" id="gearBox" hidden>
-  <div class="window modal">
+  <div class="window modal" style="position: relative;">
+    <button class="info-btn" id="gear2Btn" aria-label="Weitere Einstellungen">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-dasharray="3.4 3.4"/>
+        <circle cx="12" cy="12" r="6.4" fill="currentColor"/>
+        <circle cx="12" cy="12" r="2.6" fill="var(--card-bg)"/>
+      </svg>
+    </button>
     <h1>Level</h1>
     <button class="btn stufe-btn" data-stufe="1">Level 1: 3 in Folge</button>
     <button class="btn stufe-btn" data-stufe="2">Level 2: 5 in Folge</button>
     <button class="btn stufe-btn" data-stufe="3">Level 3: 7 in Folge</button>
     <p class="stufe-hinweis">Ein neues Level beginnt sofort von vorn. Die Spinnen der früheren Levels gelten dann als freigeschaltet.</p>
-    <button class="btn" id="resetBtn">Alles zurücksetzen</button>
+    <button class="btn btn-block" id="terrBtn" hidden>Terrarium</button>
     <p></p>
     <button class="btn btn-emphasized" id="gearZu">Schließen</button>
+  </div>
+</div>
+
+<!-- Zahnrad, zweite Ebene -->
+<div class="overlay" id="gearBox2" hidden>
+  <div class="window modal">
+    <h1>Mehr</h1>
+    <button class="btn btn-block" id="alleBtn">Alle Spinnen freischalten</button>
+    <p class="stufe-hinweis">Danach gibt es nach jedem Wortpaar eine Spinne zum Anhören. Rückgängig geht das nur mit „Alles zurücksetzen“.</p>
+    <button class="btn btn-block" id="resetBtn">Alles zurücksetzen</button>
+    <p></p>
+    <button class="btn btn-emphasized" id="gear2Zu">Schließen</button>
   </div>
 </div>
 
@@ -297,7 +322,9 @@ const root = document.documentElement;
 const themeBtn = document.getElementById('themeToggle');
 let dark = true;
 try { dark = !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches); } catch (e) {}
-function setTheme(d) { root.setAttribute('data-theme', d ? 'dark' : 'light'); themeBtn.textContent = d ? '☀' : '☾'; }
+const SONNE = '<svg class="linie" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const MOND  = '<svg class="linie" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+function setTheme(d) { root.setAttribute('data-theme', d ? 'dark' : 'light'); themeBtn.innerHTML = d ? SONNE : MOND; }
 setTheme(dark);
 themeBtn.addEventListener('click', () => { dark = !dark; setTheme(dark); });
 
@@ -438,14 +465,14 @@ async function starten() {
   const tok = ++lauf;
   stopTon();
   if (weiterWarten) { weiterWarten(); weiterWarten = null; }
-  ['startBox', 'spinneBox', 'gearBox', 'levelBox', 'infoBox'].forEach(id => { $(id).hidden = true; });
+  ['startBox', 'spinneBox', 'gearBox', 'gearBox2', 'levelBox', 'infoBox'].forEach(id => { $(id).hidden = true; });
   $('terrarium').hidden = true; $('uebung').hidden = false;
   baueLichter(); serie = 0; setzeLichter(0);
   sperre(true);
   const e = stand().erledigt;
   reihenfolge = mischen(9).filter(i => !e.includes(i));      // nur Paare, die noch nicht geklappt haben
   position = 0;
-  if (!reihenfolge.length) { stand().fertig = true; speichern(); await terrarium(tok, false); return; }
+  if (!reihenfolge.length) { stand().fertig = true; speichern(); await terrarium(tok, 'uebersicht'); return; }
   await neueRunde(tok);
 }
 
@@ -494,23 +521,19 @@ async function paarGeschafft(tok) {
   if (!gueltig(tok)) return;
   await pause(400);
   if (!gueltig(tok)) return;
-  // Nur nach dem 3., 6. und 9. Paar eines Levels: neue Spinne (feste Reihenfolge, Level 1 = Nr. 1-3, Level 2 = 4-6, Level 3 = 7-9)
   let alleNeu = false;
-  if (st.erledigt.length % 3 === 0) {
+  if (S.spinnen.length >= 9) {
+    // Alle Spinnen sind frei: nach JEDEM Wortpaar eine zufällige Spinne zum Nachfragen (Infotext erst nach Tipp aufs Bild)
+    let nr;
+    do { nr = Math.floor(Math.random() * 9); } while (nr === letzteAbfrage);
+    letzteAbfrage = nr;
+    if (!(await zeigeSpinne(tok, SPINNEN[nr], ['kennst_du']))) return;
+  } else if (st.erledigt.length % 3 === 0) {
+    // Nur nach dem 3., 6. und 9. Paar eines Levels: neue Spinne (feste Reihenfolge, Level 1 = Nr. 1-3, Level 2 = 4-6, Level 3 = 7-9)
     const nr = (S.stufe - 1) * 3 + st.erledigt.length / 3 - 1;
     if (!S.spinnen.includes(nr)) {
       S.spinnen.push(nr); speichern();
-      const spinne = SPINNEN[nr];
-      aktuelleSpinne = spinne;
-      $('spinneBild').src = spinnenBild(spinne);
-      $('spinneName').textContent = spinne.name;
-      $('spinneBox').hidden = false;
-      const warte = new Promise(r => { weiterWarten = r; });
-      spiele(['neue_spinne', spinne.datei]);    // nicht abwarten: Pfeil oder Wischen darf jederzeit weitergehen
-      await warte;
-      if (!gueltig(tok)) return;
-      $('spinneBox').hidden = true;
-      stopTon();
+      if (!(await zeigeSpinne(tok, SPINNEN[nr], ['neue_spinne', SPINNEN[nr].datei]))) return;
       alleNeu = S.spinnen.length >= 9;
     }
   }
@@ -521,12 +544,29 @@ async function paarGeschafft(tok) {
   await neueRunde(tok);
 }
 
+/* Spinnen-Fenster: zeigt die Spinne, spielt die Tonfolge "namen" von allein. Pfeil, Wischen oder Tippen aufs Bild:
+   Pfeil/Wischen = weiter, Bild antippen = Infotext der Spinne. Gibt false zurück, wenn dazwischen neu gestartet wurde. */
+let letzteAbfrage = -1;
+async function zeigeSpinne(tok, spinne, namen) {
+  aktuelleSpinne = spinne;
+  $('spinneBild').src = spinnenBild(spinne);
+  $('spinneName').textContent = spinne.name;
+  $('spinneBox').hidden = false;
+  const warte = new Promise(r => { weiterWarten = r; });
+  spiele(namen);                                // nicht abwarten: Pfeil oder Wischen darf jederzeit weitergehen
+  await warte;
+  if (!gueltig(tok)) return false;
+  $('spinneBox').hidden = true;
+  stopTon();
+  return true;
+}
+
 /* Level geschafft (9 Paare). Level 1 und 2: Ansprache mit dem Superhelden, Klick startet das nächste Level.
-   Level 3: Terrarium (mit der Ansage "alle Spinnen", wenn gerade die letzte frei wurde). */
+   Level 3: Terrarium ("Wow, alle Spinnen!" nur, wenn gerade die letzte frei wurde, sonst die Übersicht). */
 async function levelEnde(tok, alleNeu) {
   const fertigesLevel = S.stufe;
   stand().fertig = true;
-  if (fertigesLevel >= 3) { speichern(); await terrarium(tok, alleNeu); return; }
+  if (fertigesLevel >= 3) { speichern(); await terrarium(tok, alleNeu ? 'wow' : 'uebersicht'); return; }
   S.stufe = fertigesLevel + 1;                  // beim nächsten Öffnen geht es hier weiter
   if (stand().fertig) S.stufen[S.stufe] = frischeStufe();
   speichern();
@@ -539,7 +579,8 @@ async function levelEnde(tok, alleNeu) {
   await starten();
 }
 
-/* Terrarium: alle freigeschalteten Spinnen untereinander, Tippen spielt den Infotext */
+/* Terrarium: alle freigeschalteten Spinnen untereinander, Tippen spielt den Infotext.
+   ansage: 'wow' = "alle Spinnen freigeschaltet", 'uebersicht' = "Hier ist die Übersicht ...", sonst keine */
 async function terrarium(tok, ansage) {
   const box = $('tiere');
   box.textContent = '';
@@ -555,8 +596,19 @@ async function terrarium(tok, ansage) {
   });
   $('uebung').hidden = true; $('terrarium').hidden = false;
   window.scrollTo(0, 0);
-  if (ansage) await spiele(['spinnen_alle']);
+  if (ansage === 'wow') await spiele(['spinnen_alle']);
+  else if (ansage === 'uebersicht') await spiele(['terrarium_uebersicht']);
 }
+
+/* Zurück zum Üben: War das Level gerade fertig, startet das nächste (nach Level 3 wieder Level 3 von vorn) */
+$('weiterUebenBtn').addEventListener('click', async () => {
+  if (stand().fertig) {
+    if (S.stufe < 3) S.stufe++;
+    S.stufen[S.stufe] = frischeStufe();
+    speichern();
+  }
+  await starten();
+});
 
 pics.k.addEventListener('click', () => antwort(0));
 pics.t.addEventListener('click', () => antwort(1));
@@ -566,6 +618,7 @@ playBtn.addEventListener('click', () => {
 });
 let aktuelleSpinne = null;
 $('nochmalBtn').addEventListener('click', () => { if (aktuelleSpinne) spiele([aktuelleSpinne.datei]); });   // Infotext nochmal
+$('spinneBild').addEventListener('click', () => { if (aktuelleSpinne) spiele([aktuelleSpinne.datei]); });   // Tipp aufs Bild: Infotext
 const spinneWeiter = () => { if (weiterWarten) { weiterWarten(); weiterWarten = null; } };
 $('weiterBtn').addEventListener('click', spinneWeiter);
 /* Wischen: Bild mit dem Finger wegschieben (weit genug, in beliebige Richtung) = weiter */
@@ -606,11 +659,34 @@ function zeigeStufen() {
   document.querySelectorAll('.stufe-btn').forEach(b => {
     b.classList.toggle('btn-emphasized', Number(b.dataset.stufe) === S.stufe);
   });
+  $('terrBtn').hidden = S.spinnen.length < 9;           // "Terrarium" gibt es erst, wenn alle 9 Spinnen frei sind
+}
+function zeigeMehr() {                                   // zweite Ebene: Knopf zeigt, ob schon alles frei ist
+  const alle = S.spinnen.length >= 9;
+  $('alleBtn').textContent = alle ? 'Alle Spinnen sind freigeschaltet' : 'Alle Spinnen freischalten';
+  $('alleBtn').disabled = alle;
 }
 $('gearBtn').addEventListener('click', () => { zeigeStufen(); $('gearBox').hidden = false; });
 $('gearZu').addEventListener('click', () => { $('gearBox').hidden = true; });
 $('gearBox').addEventListener('click', e => { if (e.target === $('gearBox')) $('gearBox').hidden = true; });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('gearBox').hidden = true; $('infoBox').hidden = true; } });
+$('gear2Btn').addEventListener('click', () => { zeigeMehr(); $('gearBox2').hidden = false; });
+$('gear2Zu').addEventListener('click', () => { $('gearBox2').hidden = true; });
+$('gearBox2').addEventListener('click', e => { if (e.target === $('gearBox2')) $('gearBox2').hidden = true; });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { $('gearBox2').hidden = true; $('gearBox').hidden = true; $('infoBox').hidden = true; }
+});
+$('alleBtn').addEventListener('click', () => {           // alle Spinnen freischalten (ohne zum Terrarium zu wechseln)
+  S.spinnen = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  speichern();
+  zeigeMehr(); zeigeStufen();
+});
+$('terrBtn').addEventListener('click', async () => {     // Wechsel zum Terrarium nur auf diesen Klick
+  const tok = ++lauf;
+  stopTon();
+  if (weiterWarten) { weiterWarten(); weiterWarten = null; }
+  ['startBox', 'spinneBox', 'gearBox', 'gearBox2', 'levelBox', 'infoBox'].forEach(id => { $(id).hidden = true; });
+  await terrarium(tok, 'uebersicht');
+});
 document.querySelectorAll('.stufe-btn').forEach(b => {
   b.addEventListener('click', async () => {
     const neu = Number(b.dataset.stufe);
@@ -627,7 +703,7 @@ $('resetBtn').addEventListener('click', async () => {
   if (!ja) return;
   S = frischerStand();
   speichern();
-  $('gearBox').hidden = true;
+  $('gearBox').hidden = true; $('gearBox2').hidden = true;
   if ($('startBox').hidden === false) return;
   await starten();
 });
